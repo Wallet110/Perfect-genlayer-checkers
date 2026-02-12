@@ -1,0 +1,33 @@
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+
+const app = express();
+const server = http.createServer(app);
+
+// Fix CORS for production
+const io = new Server(server, {
+  cors: { origin: "*", methods: ["GET", "POST"] }
+});
+
+app.use(express.static(__dirname));
+
+// Game State
+let players = {};
+let leaderboard = [];
+
+io.on('connection', (socket) => {
+    socket.on('joinGame', (username) => {
+        players[socket.id] = { username, wins: 0 };
+        io.emit('updateLeaderboard', leaderboard);
+    });
+
+    socket.on('move', (data) => socket.broadcast.emit('move', data));
+});
+
+// RAILWAY PORT FIX
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+});
